@@ -7,51 +7,27 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   body { background: #0a0a0f; color: white; }
-  .reel { 
-    width: 72px; height: 185px; 
-    background: linear-gradient(#1c1c24, #111114); 
-    border: 6px solid #27272a; 
-    border-radius: 14px; 
-    display: flex; flex-direction: column; justify-content: space-between; 
-    padding: 5px 0; 
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
-  }
-  .symbol-img { 
-    width: 100%; height: 58px; 
-    object-fit: contain; 
-    transition: transform 0.15s ease, filter 0.1s ease;
-  }
+  .reel { width: 72px; height: 185px; background: linear-gradient(#1c1c24, #111114); border: 6px solid #27272a; border-radius: 14px; display: flex; flex-direction: column; justify-content: space-between; padding: 5px 0; }
+  .symbol-img { width: 100%; height: 58px; object-fit: contain; transition: transform 0.15s ease, filter 0.1s ease; }
   .reel.spinning .symbol-img { filter: blur(1px); transform: scale(0.9); }
   .bet-active { background-color: #831843 !important; color: #fda4af !important; border-color: #be185d !important; }
   .bonus-wheel { width: 82px; height: 185px; background: linear-gradient(#1c1c24, #111114); border: 5px solid #4c1d95; border-radius: 14px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .symbol-img.win-highlight { box-shadow: 0 0 14px #f472b6, 0 0 28px #c026d3; }
   .symbol-img.landed { animation: reelLand 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
   @keyframes reelLand { 0% { transform: scale(0.65); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
-
-  /* Mobile improvements */
-  @media (max-width: 640px) {
-    .reel { width: 64px; height: 170px; }
-    .symbol-img { height: 52px; }
-    .bonus-wheel { width: 74px; height: 170px; }
-  }
-  @media (min-width: 640px) {
-    .reel { width: 88px; height: 205px; }
-    .symbol-img { height: 66px; }
-    .bonus-wheel { width: 95px; height: 205px; }
-  }
+  @media (max-width: 640px) { .reel { width: 64px; height: 170px; } .symbol-img { height: 52px; } }
+  @media (min-width: 640px) { .reel { width: 88px; height: 205px; } .symbol-img { height: 66px; } }
 </style>
 </head>
 <body>
   <div class="max-w-[1100px] mx-auto px-3 py-3">
     
-    <!-- Header -->
     <div class="flex justify-between items-center mb-3">
       <div></div>
       <h1 class="text-4xl sm:text-5xl font-black tracking-[-1.5px]">THE DEATHSONG FREQUENCY</h1>
       <button onclick="showSettings()" class="text-2xl p-1">⚙️</button>
     </div>
 
-    <!-- Balance + Bet -->
     <div class="flex justify-center gap-x-10 mb-5">
       <div class="text-center">
         <div class="text-xs text-zinc-400">BALANCE</div>
@@ -94,8 +70,8 @@
       </div>
 
       <div class="mt-5 flex justify-center">
-        <button onclick="spin()" id="spin-btn"
-          class="px-20 py-4 bg-gradient-to-r from-pink-600 to-rose-600 text-white text-2xl font-extrabold rounded-2xl active:scale-[0.97]">
+        <button onclick="unlockAudio(); spin()" id="spin-btn"
+          class="px-20 py-4 bg-gradient-to-r from-pink-600 to-rose-600 text-white text-2xl font-extrabold rounded-2xl">
           SPIN <span class="text-3xl">💦</span>
         </button>
       </div>
@@ -103,7 +79,6 @@
 
     <div id="result" class="min-h-[48px] mt-5 text-center text-xl font-semibold"></div>
 
-    <!-- Bet Buttons -->
     <div class="mt-4 flex justify-center gap-2 flex-wrap">
       <button onclick="setBet(10)" class="bet-btn px-6 py-2.5 text-sm bg-zinc-900 border border-zinc-700 rounded-2xl">10</button>
       <button onclick="setBet(25)" class="bet-btn px-6 py-2.5 text-sm bg-zinc-900 border border-zinc-700 rounded-2xl">25</button>
@@ -154,6 +129,85 @@
   <video id="video-scatter" class="hidden" src="scatter-win.mp4" playsinline></video>
 
 <script>
+// ==================== SOUND + VIDEO ====================
+let audioCtx;
+let spinSoundInterval = null;
+
+function getAudioContext() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function unlockAudio() {
+  const ctx = getAudioContext();
+  if (ctx.state === 'suspended') ctx.resume();
+}
+
+function playSpinSound() {
+  const ctx = getAudioContext();
+  if (spinSoundInterval) clearInterval(spinSoundInterval);
+
+  spinSoundInterval = setInterval(() => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.value = 78 + Math.random() * 32;
+    gain.gain.value = 0.045;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    setTimeout(() => {
+      gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      setTimeout(() => osc.stop(), 160);
+    }, 90);
+  }, 155);
+}
+
+function stopSpinSound() {
+  if (spinSoundInterval) {
+    clearInterval(spinSoundInterval);
+    spinSoundInterval = null;
+  }
+}
+
+function playWinSound(isBig = false) {
+  const ctx = getAudioContext();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = isBig ? 'sawtooth' : 'sine';
+  osc.frequency.value = isBig ? 420 : 620;
+  gain.gain.value = isBig ? 0.22 : 0.16;
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  setTimeout(() => {
+    gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.65);
+    setTimeout(() => osc.stop(), 750);
+  }, isBig ? 280 : 200);
+}
+
+function playVideo(id) {
+  const video = document.getElementById(id);
+  if (video) {
+    video.currentTime = 0;
+    video.play().catch(() => {});
+  }
+}
+
+function launchConfetti() {
+  for (let i = 0; i < 50; i++) {
+    setTimeout(() => {
+      const p = document.createElement('div');
+      p.style.cssText = `position:fixed;left:${Math.random()*100}vw;top:-10px;width:6px;height:6px;background:#c026d3;border-radius:50%;z-index:9999`;
+      document.body.appendChild(p);
+      p.animate([{transform:'translateY(0)'}, {transform:`translateY(${window.innerHeight+50}px)`}], 
+        {duration: 1500 + Math.random()*600, easing:'ease-out'})
+       .onfinish = () => p.remove();
+    }, i * 4);
+  }
+}
+
 // ==================== GAME ====================
 let balance = 1000;
 let currentBet = 50;
@@ -164,19 +218,6 @@ const reelSymbols = ['symbol_peach.jpg','symbol_eggplant.jpg','symbol_squirt.jpg
 const actionImages = ['action_sucks.jpg','action_licks.jpg','action_rides.jpg','action_fucks.jpg'];
 const targetImages = ['target_your.jpg','target_my.jpg','target_her.jpg'];
 const partImages = ['part_cock.jpg','part_ass.jpg','part_pussy.jpg','part_face.jpg'];
-
-let audioCtx;
-let spinSoundInterval;
-
-function playSpinSound() { /* same reliable spin sound as before */ }
-function stopSpinSound() { /* ... */ }
-function playWinSound(isBig = false) { /* ... */ }
-function playVideo(id) { /* ... */ }
-
-function setVolatility(level) {
-  volatility = level;
-  document.getElementById('settings-modal').classList.add('hidden');
-}
 
 function getMultiplier(base) {
   if (volatility === 'low') return base * 0.8;
@@ -267,12 +308,11 @@ function spin() {
     if (grid[1][0] === grid[2][0] && grid[2][0] === grid[3][0]) { win += currentBet * getMultiplier(2.5); lines++; }
     if (grid[1][2] === grid[2][2] && grid[2][2] === grid[3][2]) { win += currentBet * getMultiplier(2.5); lines++; }
 
-    // Highlight winning lines
+    // Winning line highlights
+    document.querySelectorAll('.symbol-img').forEach(img => img.classList.remove('win-highlight'));
     if (lines > 0) {
-      document.querySelectorAll('.symbol-img').forEach(img => img.classList.remove('win-highlight'));
-      // Simple highlight on center reels for demo
-      [2,3].forEach(r => {
-        const mid = document.getElementById(`s${r}-mid`);
+      [1,2,3].forEach(r => {
+        const mid = document.getElementById(`s${r + 1}-mid`);
         if (mid) mid.classList.add('win-highlight');
       });
       setTimeout(() => {
@@ -293,7 +333,10 @@ function spin() {
       resultEl.innerHTML = `\( {lines} line \){lines>1?'s':''} hit <span class="text-emerald-400">+${Math.floor(win)}</span>`;
       resultEl.style.color = '#f472b6';
       playWinSound(win > currentBet * 5);
-      if (win > currentBet * 6) playVideo('video-bigwin');
+      if (win > currentBet * 6) {
+        playVideo('video-bigwin');
+        launchConfetti();
+      }
     } else {
       resultEl.innerHTML = 'The frequency fades...';
       resultEl.style.color = '#71717a';
@@ -398,4 +441,4 @@ function init() {
 window.onload = init;
 </script>
 </body>
-</html>
+  </html>
