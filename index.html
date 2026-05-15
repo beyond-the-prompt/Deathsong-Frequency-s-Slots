@@ -13,8 +13,6 @@
   .bet-active { background-color: #831843 !important; color: #fda4af !important; border-color: #be185d !important; }
   .bonus-wheel { width: 82px; height: 185px; background: linear-gradient(#1c1c24, #111114); border: 5px solid #4c1d95; border-radius: 14px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .symbol-img.win-highlight { box-shadow: 0 0 14px #f472b6, 0 0 28px #c026d3; }
-  .symbol-img.landed { animation: reelLand 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
-  @keyframes reelLand { 0% { transform: scale(0.65); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
   @media (max-width: 640px) { .reel { width: 64px; height: 170px; } .symbol-img { height: 52px; } }
   @media (min-width: 640px) { .reel { width: 88px; height: 205px; } .symbol-img { height: 66px; } }
 </style>
@@ -89,7 +87,7 @@
     </div>
   </div>
 
-  <!-- Settings Modal -->
+  <!-- Settings -->
   <div id="settings-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
     <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-80">
       <h3 class="text-xl font-bold mb-4">Settings</h3>
@@ -129,24 +127,24 @@
   <video id="video-scatter" class="hidden" src="scatter-win.mp4" playsinline></video>
 
 <script>
-// ==================== SOUND SYSTEM ====================
+// ==================== SOUND (GitHub Pages Fixed) ====================
 let audioCtx;
-let spinSoundInterval = null;
 
 function getAudioContext() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
   }
   return audioCtx;
 }
 
 function unlockAudio() {
   const ctx = getAudioContext();
-  if (ctx.state === 'suspended') ctx.resume();
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
 }
+
+let spinSoundInterval = null;
 
 function playSpinSound() {
   const ctx = getAudioContext();
@@ -257,7 +255,7 @@ function spin() {
   if (spinning) return;
   const btn = document.getElementById('spin-btn');
 
-  // Force audio unlock
+  // Force audio context resume on every click
   const ctx = getAudioContext();
   if (ctx.state === 'suspended') ctx.resume();
 
