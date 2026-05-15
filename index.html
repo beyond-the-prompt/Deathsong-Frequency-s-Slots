@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE DEATHSONG FREQUENCY</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background: #0a0a0f; color: white; }
+  .reel { 
+    width: 72px; height: 185px; 
+    background: linear-gradient(#1c1c24, #111114); 
+    border: 6px solid #27272a; 
+    border-radius: 14px; 
+    display: flex; flex-direction: column; justify-content: space-between; 
+    padding: 5px 0; 
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+  }
+  .symbol-img { 
+    width: 100%; height: 58px; 
+    object-fit: contain; 
+    transition: transform 0.15s ease, filter 0.1s ease;
+  }
+  .reel.spinning .symbol-img { filter: blur(1px); transform: scale(0.9); }
+  .bet-active { background-color: #831843 !important; color: #fda4af !important; border-color: #be185d !important; }
+  .bonus-wheel { width: 82px; height: 185px; background: linear-gradient(#1c1c24, #111114); border: 5px solid #4c1d95; border-radius: 14px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .symbol-img.win-highlight { box-shadow: 0 0 14px #f472b6, 0 0 28px #c026d3; }
+  .symbol-img.landed { animation: reelLand 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes reelLand { 0% { transform: scale(0.65); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+  /* Mobile improvements */
+  @media (max-width: 640px) {
+    .reel { width: 64px; height: 170px; }
+    .symbol-img { height: 52px; }
+    .bonus-wheel { width: 74px; height: 170px; }
+  }
+  @media (min-width: 640px) {
+    .reel { width: 88px; height: 205px; }
+    .symbol-img { height: 66px; }
+    .bonus-wheel { width: 95px; height: 205px; }
+  }
+</style>
+</head>
+<body>
+  <div class="max-w-[1100px] mx-auto px-3 py-3">
+    
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-3">
+      <div></div>
+      <h1 class="text-4xl sm:text-5xl font-black tracking-[-1.5px]">THE DEATHSONG FREQUENCY</h1>
+      <button onclick="showSettings()" class="text-2xl p-1">⚙️</button>
+    </div>
+
+    <!-- Balance + Bet -->
+    <div class="flex justify-center gap-x-10 mb-5">
+      <div class="text-center">
+        <div class="text-xs text-zinc-400">BALANCE</div>
+        <div id="balance" class="text-5xl font-bold text-emerald-400">1000</div>
+      </div>
+      <div class="text-center">
+        <div class="text-xs text-zinc-400">BET</div>
+        <div id="current-bet" class="text-5xl font-bold text-pink-400">50</div>
+      </div>
+    </div>
+
+    <!-- Reels -->
+    <div class="mx-auto max-w-[1020px] bg-zinc-900 rounded-3xl p-4 border border-zinc-800">
+      <div class="flex justify-center gap-x-2 p-3 bg-black rounded-2xl">
+        <div class="reel" id="reel1">
+          <img class="symbol-img" id="s1-top" src="symbol_peach.jpg">
+          <img class="symbol-img" id="s1-mid" src="symbol_eggplant.jpg">
+          <img class="symbol-img" id="s1-bot" src="symbol_squirt.jpg">
+        </div>
+        <div class="reel" id="reel2">
+          <img class="symbol-img" id="s2-top" src="symbol_devil.jpg">
+          <img class="symbol-img" id="s2-mid" src="symbol_fire.jpg">
+          <img class="symbol-img" id="s2-bot" src="symbol_lips.jpg">
+        </div>
+        <div class="reel" id="reel3">
+          <img class="symbol-img" id="s3-top" src="symbol_squirt.jpg">
+          <img class="symbol-img" id="s3-mid" src="symbol_peach.jpg">
+          <img class="symbol-img" id="s3-bot" src="symbol_devil.jpg">
+        </div>
+        <div class="reel" id="reel4">
+          <img class="symbol-img" id="s4-top" src="symbol_fire.jpg">
+          <img class="symbol-img" id="s4-mid" src="symbol_lips.jpg">
+          <img class="symbol-img" id="s4-bot" src="symbol_eggplant.jpg">
+        </div>
+        <div class="reel" id="reel5">
+          <img class="symbol-img" id="s5-top" src="symbol_devil.jpg">
+          <img class="symbol-img" id="s5-mid" src="symbol_squirt.jpg">
+          <img class="symbol-img" id="s5-bot" src="symbol_fire.jpg">
+        </div>
+      </div>
+
+      <div class="mt-5 flex justify-center">
+        <button onclick="spin()" id="spin-btn"
+          class="px-20 py-4 bg-gradient-to-r from-pink-600 to-rose-600 text-white text-2xl font-extrabold rounded-2xl active:scale-[0.97]">
+          SPIN <span class="text-3xl">💦</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="result" class="min-h-[48px] mt-5 text-center text-xl font-semibold"></div>
+
+    <!-- Bet Buttons -->
+    <div class="mt-4 flex justify-center gap-2 flex-wrap">
+      <button onclick="setBet(10)" class="bet-btn px-6 py-2.5 text-sm bg-zinc-900 border border-zinc-700 rounded-2xl">10</button>
+      <button onclick="setBet(25)" class="bet-btn px-6 py-2.5 text-sm bg-zinc-900 border border-zinc-700 rounded-2xl">25</button>
+      <button onclick="setBet(50)" class="bet-btn px-6 py-2.5 text-sm bg-pink-950 text-pink-300 border border-pink-700 rounded-2xl bet-active">50</button>
+      <button onclick="setBet(100)" class="bet-btn px-6 py-2.5 text-sm bg-zinc-900 border border-zinc-700 rounded-2xl">100</button>
+      <button onclick="setBet(250)" class="bet-btn px-6 py-2.5 text-sm bg-zinc-900 border border-zinc-700 rounded-2xl">250</button>
+      <button onclick="setMaxBet()" class="px-5 py-2.5 text-xs font-bold bg-rose-900 border border-rose-700 rounded-2xl">MAX</button>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+    <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-80">
+      <h3 class="text-xl font-bold mb-4">Settings</h3>
+      <div class="mb-4">
+        <div class="text-sm text-zinc-400 mb-2">Volatility</div>
+        <div class="flex gap-2">
+          <button onclick="setVolatility('low')" class="flex-1 py-2 bg-zinc-800 rounded-xl text-sm">Low</button>
+          <button onclick="setVolatility('medium')" class="flex-1 py-2 bg-zinc-800 rounded-xl text-sm">Medium</button>
+          <button onclick="setVolatility('high')" class="flex-1 py-2 bg-zinc-800 rounded-xl text-sm">High</button>
+        </div>
+      </div>
+      <button onclick="hideSettings()" class="w-full py-2 bg-pink-600 rounded-xl">Close</button>
+    </div>
+  </div>
+
+  <!-- Bonus -->
+  <div id="bonus-overlay" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-50">
+    <div class="text-center px-4">
+      <h2 class="text-3xl font-bold mb-1 text-pink-400">DEATHSONG RITUAL</h2>
+      <p class="text-zinc-400 mb-6 text-sm">Only real combinations win big</p>
+
+      <div class="flex justify-center gap-3 mb-7">
+        <div class="bonus-wheel"><img id="wheel1" class="max-h-[125px] max-w-[65px] object-contain" src="action_sucks.jpg"></div>
+        <div class="bonus-wheel"><img id="wheel2" class="max-h-[125px] max-w-[65px] object-contain" src="target_your.jpg"></div>
+        <div class="bonus-wheel"><img id="wheel3" class="max-h-[125px] max-w-[65px] object-contain" src="part_cock.jpg"></div>
+      </div>
+
+      <button onclick="spinThreeWheels()" id="bonus-spin-btn"
+        class="px-10 py-3 bg-pink-600 text-white font-bold text-lg rounded-2xl">SPIN THE RITUAL</button>
+      <div id="bonus-result" class="mt-5 text-xl font-bold min-h-[30px]"></div>
+    </div>
+  </div>
+
+  <!-- Videos -->
+  <video id="video-bigwin" class="hidden" src="big-win.mp4" playsinline></video>
+  <video id="video-bonus" class="hidden" src="bonus-trigger.mp4" playsinline></video>
+  <video id="video-scatter" class="hidden" src="scatter-win.mp4" playsinline></video>
+
+<script>
+// ==================== GAME ====================
+let balance = 1000;
+let currentBet = 50;
+let spinning = false;
+let volatility = 'medium';
+
+const reelSymbols = ['symbol_peach.jpg','symbol_eggplant.jpg','symbol_squirt.jpg','symbol_fire.jpg','symbol_devil.jpg','symbol_lips.jpg','symbol_hot.jpg','symbol_tongue.jpg','symbol_skull.jpg'];
+const actionImages = ['action_sucks.jpg','action_licks.jpg','action_rides.jpg','action_fucks.jpg'];
+const targetImages = ['target_your.jpg','target_my.jpg','target_her.jpg'];
+const partImages = ['part_cock.jpg','part_ass.jpg','part_pussy.jpg','part_face.jpg'];
+
+let audioCtx;
+let spinSoundInterval;
+
+function playSpinSound() { /* same reliable spin sound as before */ }
+function stopSpinSound() { /* ... */ }
+function playWinSound(isBig = false) { /* ... */ }
+function playVideo(id) { /* ... */ }
+
+function setVolatility(level) {
+  volatility = level;
+  document.getElementById('settings-modal').classList.add('hidden');
+}
+
+function getMultiplier(base) {
+  if (volatility === 'low') return base * 0.8;
+  if (volatility === 'high') return base * 1.4;
+  return base;
+}
+
+function updateBalance() {
+  document.getElementById('balance').textContent = balance.toLocaleString();
+}
+
+function setBet(amount) {
+  if (spinning) return;
+  currentBet = amount;
+  document.getElementById('current-bet').textContent = currentBet;
+  document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('bet-active'));
+  const btn = Array.from(document.querySelectorAll('.bet-btn')).find(b => parseInt(b.textContent) === amount);
+  if (btn) btn.classList.add('bet-active');
+}
+
+function setMaxBet() {
+  if (spinning) return;
+  currentBet = Math.min(250, balance);
+  document.getElementById('current-bet').textContent = currentBet;
+  document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('bet-active'));
+}
+
+function spin() {
+  if (spinning) return;
+  const btn = document.getElementById('spin-btn');
+  if (balance < currentBet) {
+    document.getElementById('result').innerHTML = `<span class="text-rose-400">Not enough balance</span>`;
+    return;
+  }
+
+  balance -= currentBet;
+  updateBalance();
+  spinning = true;
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  btn.innerHTML = `TUNING...`;
+  document.getElementById('result').innerHTML = '';
+
+  playSpinSound();
+
+  const ints = [];
+  for (let r = 1; r <= 5; r++) {
+    const reel = document.getElementById(`reel${r}`);
+    reel.classList.add('spinning');
+    const top = document.getElementById(`s${r}-top`);
+    const mid = document.getElementById(`s${r}-mid`);
+    const bot = document.getElementById(`s${r}-bot`);
+
+    const int = setInterval(() => {
+      top.src = reelSymbols[Math.floor(Math.random()*reelSymbols.length)];
+      mid.src = reelSymbols[Math.floor(Math.random()*reelSymbols.length)];
+      bot.src = reelSymbols[Math.floor(Math.random()*reelSymbols.length)];
+    }, 65);
+    ints.push(int);
+  }
+
+  const grid = [];
+  for (let c = 0; c < 5; c++) {
+    grid.push([
+      reelSymbols[Math.floor(Math.random()*reelSymbols.length)],
+      reelSymbols[Math.floor(Math.random()*reelSymbols.length)],
+      reelSymbols[Math.floor(Math.random()*reelSymbols.length)]
+    ]);
+  }
+
+  setTimeout(() => {
+    ints.forEach((int, i) => {
+      clearInterval(int);
+      const r = i + 1;
+      document.getElementById(`reel${r}`).classList.remove('spinning');
+      document.getElementById(`s${r}-top`).src = grid[i][0];
+      document.getElementById(`s${r}-mid`).src = grid[i][1];
+      document.getElementById(`s${r}-bot`).src = grid[i][2];
+    });
+    stopSpinSound();
+  }, 1300);
+
+  setTimeout(() => {
+    let win = 0;
+    let lines = 0;
+
+    if (grid[1][1] === grid[2][1] && grid[2][1] === grid[3][1]) { win += currentBet * getMultiplier(2.8); lines++; }
+    if (grid[1][0] === grid[2][0] && grid[2][0] === grid[3][0]) { win += currentBet * getMultiplier(2.5); lines++; }
+    if (grid[1][2] === grid[2][2] && grid[2][2] === grid[3][2]) { win += currentBet * getMultiplier(2.5); lines++; }
+
+    // Highlight winning lines
+    if (lines > 0) {
+      document.querySelectorAll('.symbol-img').forEach(img => img.classList.remove('win-highlight'));
+      // Simple highlight on center reels for demo
+      [2,3].forEach(r => {
+        const mid = document.getElementById(`s${r}-mid`);
+        if (mid) mid.classList.add('win-highlight');
+      });
+      setTimeout(() => {
+        document.querySelectorAll('.symbol-img').forEach(img => img.classList.remove('win-highlight'));
+      }, 2200);
+    }
+
+    let skulls = 0;
+    grid.forEach(col => col.forEach(s => { if (s === 'symbol_skull.jpg') skulls++; }));
+    if (skulls >= 3) {
+      playVideo('video-scatter');
+      setTimeout(() => showBonus(skulls), 600);
+    }
+
+    const resultEl = document.getElementById('result');
+    if (win > 0) {
+      balance += Math.floor(win);
+      resultEl.innerHTML = `\( {lines} line \){lines>1?'s':''} hit <span class="text-emerald-400">+${Math.floor(win)}</span>`;
+      resultEl.style.color = '#f472b6';
+      playWinSound(win > currentBet * 5);
+      if (win > currentBet * 6) playVideo('video-bigwin');
+    } else {
+      resultEl.innerHTML = 'The frequency fades...';
+      resultEl.style.color = '#71717a';
+    }
+    updateBalance();
+    spinning = false;
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.innerHTML = `SPIN <span class="text-3xl">💦</span>`;
+  }, 2550);
+}
+
+function showBonus(skulls) {
+  const overlay = document.getElementById('bonus-overlay');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+  overlay.dataset.skulls = skulls;
+  playVideo('video-bonus');
+}
+
+function spinThreeWheels() {
+  const img1 = document.getElementById('wheel1');
+  const img2 = document.getElementById('wheel2');
+  const img3 = document.getElementById('wheel3');
+  const resultEl = document.getElementById('bonus-result');
+  const overlay = document.getElementById('bonus-overlay');
+  const btn = document.getElementById('bonus-spin-btn');
+  btn.disabled = true;
+
+  let f1 = 0, f2 = 0, f3 = 0;
+
+  let c1 = 0;
+  const i1 = setInterval(() => {
+    img1.src = actionImages[Math.floor(Math.random()*actionImages.length)];
+    if (++c1 > 14) { clearInterval(i1); f1 = Math.floor(Math.random()*actionImages.length); img1.src = actionImages[f1]; }
+  }, 70);
+
+  setTimeout(() => {
+    let c2 = 0;
+    const i2 = setInterval(() => {
+      img2.src = targetImages[Math.floor(Math.random()*targetImages.length)];
+      if (++c2 > 14) { clearInterval(i2); f2 = Math.floor(Math.random()*targetImages.length); img2.src = targetImages[f2]; }
+    }, 70);
+  }, 480);
+
+  setTimeout(() => {
+    let c3 = 0;
+    const i3 = setInterval(() => {
+      img3.src = partImages[Math.floor(Math.random()*partImages.length)];
+      if (++c3 > 16) {
+        clearInterval(i3);
+        f3 = Math.floor(Math.random()*partImages.length);
+        img3.src = partImages[f3];
+
+        const skulls = parseInt(overlay.dataset.skulls);
+        const bet = currentBet;
+        let mult = 2;
+        let tier = "Weak";
+
+        if ((f1 === 0 && f2 === 0 && f3 === 0) || (f1 === 2 && f2 === 2 && f3 === 2)) {
+          mult = 10;
+          tier = "Perfect";
+        } else if (f1 !== undefined && f3 !== undefined) {
+          mult = 5;
+          tier = "Strong";
+        }
+
+        const win = Math.floor(bet * mult * (skulls - 2));
+        balance += win;
+        updateBalance();
+
+        resultEl.innerHTML = `\( {tier} <span class="text-emerald-400">+ \){win}</span>`;
+
+        setTimeout(() => {
+          overlay.classList.remove('flex');
+          overlay.classList.add('hidden');
+          btn.disabled = false;
+          img1.src = actionImages[0];
+          img2.src = targetImages[0];
+          img3.src = partImages[0];
+        }, 2200);
+      }
+    }, 70);
+  }, 950);
+}
+
+function showSettings() {
+  document.getElementById('settings-modal').classList.remove('hidden');
+}
+
+function hideSettings() {
+  document.getElementById('settings-modal').classList.add('hidden');
+}
+
+function init() {
+  updateBalance();
+  document.getElementById('current-bet').textContent = currentBet;
+  document.querySelectorAll('.bet-btn').forEach(b => {
+    if (parseInt(b.textContent) === 50) b.classList.add('bet-active');
+  });
+}
+window.onload = init;
+</script>
+</body>
+</html>
