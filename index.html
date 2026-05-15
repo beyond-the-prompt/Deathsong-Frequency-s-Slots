@@ -129,13 +129,17 @@
   <video id="video-scatter" class="hidden" src="scatter-win.mp4" playsinline></video>
 
 <script>
-// ==================== SOUND + VIDEO ====================
+// ==================== SOUND SYSTEM ====================
 let audioCtx;
 let spinSoundInterval = null;
 
 function getAudioContext() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
   return audioCtx;
 }
 
@@ -149,18 +153,20 @@ function playSpinSound() {
   if (spinSoundInterval) clearInterval(spinSoundInterval);
 
   spinSoundInterval = setInterval(() => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.value = 78 + Math.random() * 32;
-    gain.gain.value = 0.045;
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    setTimeout(() => {
-      gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-      setTimeout(() => osc.stop(), 160);
-    }, 90);
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.value = 78 + Math.random() * 32;
+      gain.gain.value = 0.045;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      setTimeout(() => {
+        gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+        setTimeout(() => osc.stop(), 160);
+      }, 90);
+    } catch(e) {}
   }, 155);
 }
 
@@ -173,18 +179,20 @@ function stopSpinSound() {
 
 function playWinSound(isBig = false) {
   const ctx = getAudioContext();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = isBig ? 'sawtooth' : 'sine';
-  osc.frequency.value = isBig ? 420 : 620;
-  gain.gain.value = isBig ? 0.22 : 0.16;
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start();
-  setTimeout(() => {
-    gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.65);
-    setTimeout(() => osc.stop(), 750);
-  }, isBig ? 280 : 200);
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = isBig ? 'sawtooth' : 'sine';
+    osc.frequency.value = isBig ? 420 : 620;
+    gain.gain.value = isBig ? 0.22 : 0.16;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    setTimeout(() => {
+      gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.65);
+      setTimeout(() => osc.stop(), 750);
+    }, isBig ? 280 : 200);
+  } catch(e) {}
 }
 
 function playVideo(id) {
@@ -202,7 +210,7 @@ function launchConfetti() {
       p.style.cssText = `position:fixed;left:${Math.random()*100}vw;top:-10px;width:6px;height:6px;background:#c026d3;border-radius:50%;z-index:9999`;
       document.body.appendChild(p);
       p.animate([{transform:'translateY(0)'}, {transform:`translateY(${window.innerHeight+50}px)`}], 
-        {duration: 1500 + Math.random()*600, easing:'ease-out'})
+        {duration:1500 + Math.random()*600, easing:'ease-out'})
        .onfinish = () => p.remove();
     }, i * 4);
   }
@@ -248,6 +256,11 @@ function setMaxBet() {
 function spin() {
   if (spinning) return;
   const btn = document.getElementById('spin-btn');
+
+  // Force audio unlock
+  const ctx = getAudioContext();
+  if (ctx.state === 'suspended') ctx.resume();
+
   if (balance < currentBet) {
     document.getElementById('result').innerHTML = `<span class="text-rose-400">Not enough balance</span>`;
     return;
