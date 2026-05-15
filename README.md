@@ -1,2 +1,2 @@
-# Deathsong-Frequency-s-Slots
+# Deathsong-Frequency-Slots
 Slot machine
