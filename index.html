@@ -13,13 +13,15 @@
   .bet-active { background-color: #831843 !important; color: #fda4af !important; border-color: #be185d !important; }
   .bonus-wheel { width: 82px; height: 185px; background: linear-gradient(#1c1c24, #111114); border: 5px solid #4c1d95; border-radius: 14px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .symbol-img.win-highlight { box-shadow: 0 0 14px #f472b6, 0 0 28px #c026d3; }
-  @media (max-width: 640px) { .reel { width: 64px; height: 170px; } .symbol-img { height: 52px; } }
-  @media (min-width: 640px) { .reel { width: 88px; height: 205px; } .symbol-img { height: 66px; } }
+  .video-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 9999;
+  }
+  .video-overlay video { max-width: 92%; max-height: 85%; border-radius: 12px; }
 </style>
 </head>
 <body>
   <div class="max-w-[1100px] mx-auto px-3 py-3">
-    
     <div class="flex justify-between items-center mb-3">
       <div></div>
       <h1 class="text-4xl sm:text-5xl font-black tracking-[-1.5px]">THE DEATHSONG FREQUENCY</h1>
@@ -87,7 +89,7 @@
     </div>
   </div>
 
-  <!-- Settings -->
+  <!-- Settings Modal -->
   <div id="settings-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
     <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-80">
       <h3 class="text-xl font-bold mb-4">Settings</h3>
@@ -121,35 +123,31 @@
     </div>
   </div>
 
-  <!-- Videos -->
-  <video id="video-bigwin" class="hidden" src="big-win.mp4" playsinline></video>
-  <video id="video-bonus" class="hidden" src="bonus-trigger.mp4" playsinline></video>
-  <video id="video-scatter" class="hidden" src="scatter-win.mp4" playsinline></video>
+  <!-- Video Overlay -->
+  <div id="video-overlay" onclick="hideVideoOverlay()" 
+       class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[9999]">
+    <video id="overlay-video" playsinline class="max-w-[92%] max-h-[85%] rounded-xl"></video>
+  </div>
 
 <script>
-// ==================== SOUND (GitHub Pages Fixed) ====================
+// ==================== SOUND ====================
 let audioCtx;
+let spinSoundInterval = null;
 
 function getAudioContext() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
 }
 
 function unlockAudio() {
   const ctx = getAudioContext();
-  if (ctx.state === 'suspended') {
-    ctx.resume();
-  }
+  if (ctx.state === 'suspended') ctx.resume();
 }
-
-let spinSoundInterval = null;
 
 function playSpinSound() {
   const ctx = getAudioContext();
   if (spinSoundInterval) clearInterval(spinSoundInterval);
-
   spinSoundInterval = setInterval(() => {
     try {
       const osc = ctx.createOscillator();
@@ -193,25 +191,25 @@ function playWinSound(isBig = false) {
   } catch(e) {}
 }
 
-function playVideo(id) {
-  const video = document.getElementById(id);
-  if (video) {
-    video.currentTime = 0;
-    video.play().catch(() => {});
-  }
+// ==================== VIDEO OVERLAY ====================
+function playVideoOverlay(src) {
+  const overlay = document.getElementById('video-overlay');
+  const video = document.getElementById('overlay-video');
+  video.src = src;
+  overlay.style.display = 'flex';
+  video.play().catch(() => {});
+  video.onended = () => {
+    overlay.style.display = 'none';
+    video.src = '';
+  };
 }
 
-function launchConfetti() {
-  for (let i = 0; i < 50; i++) {
-    setTimeout(() => {
-      const p = document.createElement('div');
-      p.style.cssText = `position:fixed;left:${Math.random()*100}vw;top:-10px;width:6px;height:6px;background:#c026d3;border-radius:50%;z-index:9999`;
-      document.body.appendChild(p);
-      p.animate([{transform:'translateY(0)'}, {transform:`translateY(${window.innerHeight+50}px)`}], 
-        {duration:1500 + Math.random()*600, easing:'ease-out'})
-       .onfinish = () => p.remove();
-    }, i * 4);
-  }
+function hideVideoOverlay() {
+  const overlay = document.getElementById('video-overlay');
+  const video = document.getElementById('overlay-video');
+  video.pause();
+  overlay.style.display = 'none';
+  video.src = '';
 }
 
 // ==================== GAME ====================
@@ -254,8 +252,6 @@ function setMaxBet() {
 function spin() {
   if (spinning) return;
   const btn = document.getElementById('spin-btn');
-
-  // Force audio context resume on every click
   const ctx = getAudioContext();
   if (ctx.state === 'suspended') ctx.resume();
 
@@ -319,7 +315,6 @@ function spin() {
     if (grid[1][0] === grid[2][0] && grid[2][0] === grid[3][0]) { win += currentBet * getMultiplier(2.5); lines++; }
     if (grid[1][2] === grid[2][2] && grid[2][2] === grid[3][2]) { win += currentBet * getMultiplier(2.5); lines++; }
 
-    // Winning line highlights
     document.querySelectorAll('.symbol-img').forEach(img => img.classList.remove('win-highlight'));
     if (lines > 0) {
       [1,2,3].forEach(r => {
@@ -334,7 +329,7 @@ function spin() {
     let skulls = 0;
     grid.forEach(col => col.forEach(s => { if (s === 'symbol_skull.jpg') skulls++; }));
     if (skulls >= 3) {
-      playVideo('video-scatter');
+      playVideoOverlay('scatter-win.mp4');
       setTimeout(() => showBonus(skulls), 600);
     }
 
@@ -345,7 +340,7 @@ function spin() {
       resultEl.style.color = '#f472b6';
       playWinSound(win > currentBet * 5);
       if (win > currentBet * 6) {
-        playVideo('video-bigwin');
+        playVideoOverlay('big-win.mp4');
         launchConfetti();
       }
     } else {
@@ -365,7 +360,7 @@ function showBonus(skulls) {
   overlay.classList.remove('hidden');
   overlay.classList.add('flex');
   overlay.dataset.skulls = skulls;
-  playVideo('video-bonus');
+  playVideoOverlay('bonus-trigger.mp4');
 }
 
 function spinThreeWheels() {
